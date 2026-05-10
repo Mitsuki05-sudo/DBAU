@@ -1,0 +1,104 @@
+.menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #1E293B;
+  padding: 8px;
+}
+
+.topbar {
+  height: 80px;
+  background-color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1; /* Prend l'espace disponible */
+  justify-content: flex-end;
+}
+
+@media (max-width: 1024px) {
+  .topbar {
+    padding: 0 15px;
+    gap: 10px;
+  }
+
+  .topbar-actions {
+    gap: 10px; /* Réduit l'espacement sur mobile */
+  }
+
+  .date-input {
+    width: 100px;
+    padding: 4px;
+    font-size: 10px;
+  }
+
+  .user-text {
+    display: none;
+  }
+}
+
+.date-input {
+  border: 1px solid #E2E8F0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1E293B;
+  outline: none;
+}
+
+.notification {
+  position: relative;
+  cursor: pointer;
+}
+
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #EF4444;
+  color: white;
+  font-size: 10px;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+/* --- LE RESPONSIF MOBILE --- */
+@media (max-width: 1024px) {
+  .topbar {
+    padding: 0 15px;
+  }
+
+  .menu-btn {
+    display: block; /* Affiche le bouton "Menu" sur mobile */
+  }
+
+  .date-input {
+    width: 110px;
+    padding: 6px;
+    font-size: 11px;
+  }
+
+  .user-text {
+    display: none; /* Cache le texte "Admin DBAU" sur mobile pour gagner de la place */
+  }
+}
