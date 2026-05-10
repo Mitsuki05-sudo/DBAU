@@ -35,10 +35,10 @@ export default function Dashboard() {
         ]);
 
         setKpis({
-          total_avis: dataKpis?.total_avis || 0,
-          note_moyenne: dataKpis?.note_moyenne || 0,
-          taux_satisfaction: dataKpis?.taux_satisfaction || 0,
-          avis_negatifs: dataKpis?.avis_negatifs || 0
+          total_avis: Number(dataKpis?.total_avis) || 0,
+          note_moyenne: Number(dataKpis?.note_moyenne) || 0,
+          taux_satisfaction: Number(dataKpis?.taux_satisfaction) || 0,
+          avis_negatifs: Number(dataKpis?.avis_negatifs) || 0
         });
 
         setDonneesServices(Array.isArray(dataServices) ? dataServices : []);
@@ -79,7 +79,7 @@ export default function Dashboard() {
         {/* BOUTON EXPORTER */}
         <button 
           onClick={() => setModalExportOuvert(true)}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#4318FF', color: 'white', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', transition: 'background-color 0.3s' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#10B981', color: 'white', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', transition: 'background-color 0.3s' }}
           onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3311CC'}
           onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#4318FF'}
         >

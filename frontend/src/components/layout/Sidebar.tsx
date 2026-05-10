@@ -26,7 +26,7 @@ export default function Sidebar() {
           <div style={{ width: 40, height: 40, backgroundColor: '#FFB547', borderRadius: '50%' }}></div>
           <div>
             <div className="logo-title">SGEC - DBAU</div>
-            <div className="logo-subtitle">Système de Gestion</div>
+            <div className="logo-subtitle">Système de Gestion des Expériences Clients</div>
           </div>
         </div>
 

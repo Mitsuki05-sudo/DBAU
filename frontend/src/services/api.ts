@@ -12,11 +12,12 @@ export const adminService = {
     try {
       // On construit l'URL avec les paramètres si les dates existent
       let url = '/admin/kpis';
-      if (dateDebut && dateFin) {
-        url += `?date_debut=${dateDebut}&date_fin=${dateFin}`;
-      }
+      // if (dateDebut && dateFin) {
+      //   url += `?date_debut=${dateDebut}&date_fin=${dateFin}`;
+      // }
       
       const response = await api.get(url);
+      console.log("DEBUG API KPIS :", response.data);
       return response.data; // Retourne { total_avis, note_moyenne, ... }
     } catch (error) {
       console.error("Erreur lors de la récupération des KPIs:", error);

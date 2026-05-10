@@ -1,3 +1,7 @@
+
+/* Utilise Inter pour le look moderne */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 * {
   margin: 0;
   padding: 0;
@@ -6,6 +10,8 @@
 }
 
 body {
-  background-color: #F4F7FE; /* Le gris clair du fond de ton image */
+  background-color: #F8FAFC; /* Un blanc grisé très léger, plus moderne */
   color: #1E293B;
+  font-family: 'Inter', sans-serif;
+  margin: 0;
 }
