@@ -16,8 +16,8 @@ export default function AvisNegatifs() {
         const donneesFormatees: AvisData[] = Array.isArray(dataBdd) ? dataBdd.map((item: any) => ({
           id: item.id.toString(),
           date: new Date(item.date_soumission).toLocaleString('fr-FR'),
-          service: item.service || 'Non spécifié',
-          motif: item.motif || 'Non spécifié',
+          service: item.services_nom || item.services || 'Non spécifié',
+          motif: item.motifs || 'Non spécifié',
           note: item.note_globale,
           commentaire: item.commentaire || 'Aucun commentaire',
           statut: (item.traite ? 'Traité' : 'Non traité') as 'Traité' | 'Non traité',

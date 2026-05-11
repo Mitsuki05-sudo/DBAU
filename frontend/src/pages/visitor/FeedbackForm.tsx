@@ -157,30 +157,10 @@ export default function FeedbackForm() {
     }
   }, []);
 
+  // CORRECTION : chargement simple des motifs au démarrage
   useEffect(() => {
-    const verifierEtCharger = async () => {
-      try {
-        const reponseSession = await fetch(
-          `http://localhost:3000/api/feedback/check-session/${sessionId}`
-        );
-        if (reponseSession.ok) {
-          const { serviceIdsDejaEvalues } = await reponseSession.json();
-          if (Array.isArray(serviceIdsDejaEvalues) && serviceIdsDejaEvalues.length > 0) {
-            const stockage: ServicesEvaluesAujourdhui = {
-              date: obtenirDateDuJour(),
-              serviceIds: serviceIdsDejaEvalues,
-            };
-            localStorage.setItem('sgec_services_evalues', JSON.stringify(stockage));
-          }
-        }
-      } catch {
-        // pas critique
-      }
-      await chargerMotifs();
-    };
-
-    verifierEtCharger();
-  }, [sessionId, chargerMotifs]);
+    chargerMotifs();
+  }, [chargerMotifs]);
 
   useEffect(() => {
     const gererRetourConnexion = () => {

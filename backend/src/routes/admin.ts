@@ -16,11 +16,11 @@ router.get('/kpis', async (req: Request, res: Response) => {
     const params: any[] = [];
 
     if (date_debut) {
-      whereClause += ' AND a.date_soumission >= ?';
+      whereClause += ' AND DATE(a.date_soumission) >= ?';
       params.push(date_debut);
     }
     if (date_fin) {
-      whereClause += ' AND a.date_soumission <= ?';
+      whereClause += ' AND DATE(a.date_soumission) <= ?';
       params.push(date_fin);
     }
     if (service_id) {
@@ -117,12 +117,14 @@ router.get('/commentaires', async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string) || 20;
     const [rows] = await pool.query(
-      `SELECT a.id, a.date_soumission, a.note_globale, a.commentaire,
-        GROUP_CONCAT(m.libelle SEPARATOR ', ') as motifs
+      `SELECT a.id, a.date_soumission, a.note_globale, a.commentaire, a.traite,
+        GROUP_CONCAT(DISTINCT m.libelle SEPARATOR ', ') as motifs,
+        GROUP_CONCAT(DISTINCT s.code SEPARATOR ', ') as services,
+        GROUP_CONCAT(DISTINCT s.nom SEPARATOR ', ') as services_nom
       FROM avis a
       LEFT JOIN avis_motifs am ON a.id = am.avis_id
       LEFT JOIN motifs m ON am.motif_id = m.id
-      WHERE a.commentaire IS NOT NULL AND a.commentaire != ''
+      LEFT JOIN services s ON m.service_id = s.id
       GROUP BY a.id
       ORDER BY a.date_soumission DESC
       LIMIT ?`,
@@ -146,10 +148,14 @@ router.get('/avis-negatifs', async (req: Request, res: Response) => {
     }
 
     const [rows] = await pool.query(
-      `SELECT a.*, GROUP_CONCAT(m.libelle SEPARATOR ', ') as motifs
+      `SELECT a.*, 
+        GROUP_CONCAT(DISTINCT m.libelle SEPARATOR ', ') as motifs,
+        GROUP_CONCAT(DISTINCT s.code SEPARATOR ', ') as services,
+        GROUP_CONCAT(DISTINCT s.nom SEPARATOR ', ') as services_nom
       FROM avis a
       LEFT JOIN avis_motifs am ON a.id = am.avis_id
       LEFT JOIN motifs m ON am.motif_id = m.id
+      LEFT JOIN services s ON m.service_id = s.id
       ${whereClause}
       GROUP BY a.id
       ORDER BY a.date_soumission DESC`
@@ -160,7 +166,6 @@ router.get('/avis-negatifs', async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Erreur serveur' });
   }
 });
-
 // Marquer un avis comme traité (F-12)
 router.put('/marquer-traite/:id', async (req: Request, res: Response) => {
   try {

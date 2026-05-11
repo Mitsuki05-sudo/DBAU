@@ -42,7 +42,10 @@ export const adminService = {
       return [];
     }
   },
-
+  marquerTraite: async (id: string) => {
+    const response = await api.put(`/admin/marquer-traite/${id}`);
+    return response.data;
+  },
   getAnalyseServices: async () => {
     const response = await api.get('/admin/analyse-services');
     return response.data;
