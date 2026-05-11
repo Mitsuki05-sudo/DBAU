@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MessageSquare, Star, Smile, Frown, Database, Download, X } from 'lucide-react';
+import { MessageSquare, Star, Smile, Frown, Download, X } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip as TooltipBar, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, Legend, Tooltip as TooltipPie 
@@ -12,13 +12,10 @@ import './Dashboard.css';
 export default function Dashboard() {
   const { dateDebut, dateFin } = useDateStore();
   
-  // States des données
   const [kpis, setKpis] = useState({ total_avis: 0, note_moyenne: 0, taux_satisfaction: 0, avis_negatifs: 0 });
   const [donneesServices, setDonneesServices] = useState<any[]>([]);
   const [donneesMotifs, setDonneesMotifs] = useState<any[]>([]);
   const [chargement, setChargement] = useState(true);
-
-  // States pour la fenêtre d'Export PDF
   const [modalExportOuvert, setModalExportOuvert] = useState(false);
   const [serviceExport, setServiceExport] = useState("Tous");
 
@@ -33,19 +30,30 @@ export default function Dashboard() {
           adminService.getAnalyseServices(),
           adminService.getAnalyseMotifs()
         ]);
-
+  
         setKpis({
           total_avis: Number(dataKpis?.total_avis) || 0,
           note_moyenne: Number(dataKpis?.note_moyenne) || 0,
           taux_satisfaction: Number(dataKpis?.taux_satisfaction) || 0,
           avis_negatifs: Number(dataKpis?.avis_negatifs) || 0
         });
-
-        setDonneesServices(Array.isArray(dataServices) ? dataServices : []);
-        setDonneesMotifs(Array.isArray(dataMotifs) ? dataMotifs : []);
-
+  
+        // Mapping précis selon ton JSON backend
+        setDonneesServices((Array.isArray(dataServices) ? dataServices : []).map(item => ({
+          service: item.nom || "Inconnu", // On utilise 'nom'
+          note: Number(item.note_moyenne) || 0 // On utilise 'note_moyenne'
+        })));
+  
+        setDonneesMotifs((Array.isArray(dataMotifs) ? dataMotifs : [])
+        .filter(item => Number(item.nombre_avis) > 0) 
+        .map(item => ({
+          motif: item.libelle,
+          total: Number(item.nombre_avis)
+        })));
+        
+  
       } catch (error) {
-        console.error("Erreur de connexion au Backend :", error);
+        console.error("Erreur Backend :", error);
       } finally {
         setChargement(false);
       }
@@ -53,110 +61,84 @@ export default function Dashboard() {
     chargerToutesLesDonnees();
   }, [dateDebut, dateFin]);
 
-  const formatLegendText = (value: string) => (
-    <span style={{ color: '#475569', fontWeight: 500, marginLeft: '4px' }}>{value}</span>
-  );
-
   const genererPDF = async () => {
-    try {
-      alert(`Simulation : Génération du PDF pour le service [${serviceExport}] en cours...\n(Le vrai fichier sera téléchargé quand le backend sera prêt).`);
-      // await adminService.exporterPDF(); 
-      setModalExportOuvert(false);
-    } catch (error) {
-      alert("Erreur lors de l'exportation.");
-    }
-  };
+        try {
+          alert(`Simulation : Génération du PDF pour le service [${serviceExport}] en cours...\n`);
+          await adminService.exporterPDF(); 
+          setModalExportOuvert(false);
+        } catch (error) {
+          alert("Erreur lors de l'exportation.");
+        }
+      };
 
   return (
     <div>
-      {/* EN-TÊTE AVEC LE BOUTON EXPORT */}
       <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '15px' }}>
         <div>
           <h1>Vue d'ensemble</h1>
-          <p>Aperçu global des évaluations de la DBAU pour la période sélectionnée.</p>
+          <p>Aperçu global des évaluations de la DBAU.</p>
         </div>
-        
-        {/* BOUTON EXPORTER */}
-        <button 
-          onClick={() => setModalExportOuvert(true)}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#10B981', color: 'white', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', transition: 'background-color 0.3s' }}
-          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3311CC'}
-          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#4318FF'}
-        >
+        <button onClick={() => setModalExportOuvert(true)} style={{ backgroundColor: '#10B981', color: 'white', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>
           <Download size={18} /> Exporter en PDF
         </button>
       </div>
 
       {chargement ? (
-        <div style={{ textAlign: 'center', padding: '50px', color: '#64748B' }}>
-          Récupération des vraies données depuis la base...
-        </div>
+        <div style={{ textAlign: 'center', padding: '50px' }}>Chargement...</div>
       ) : (
         <>
           <div className="kpi-grid">
-            <KpiCard titre="Nombre total d'avis" valeur={kpis.total_avis.toString()} tendance="Période actuelle" estPositif={true} icone={<MessageSquare color="#4318FF" size={28} />} couleurFond="#F4F7FE" />
-            <KpiCard titre="Note moyenne globale" valeur={`${kpis.note_moyenne.toFixed(1)} / 5`} tendance="Période actuelle" estPositif={true} icone={<Star color="white" size={28} fill="white" />} couleurFond="#4318FF" />
-            <KpiCard titre="Taux de satisfaction" valeur={`${kpis.taux_satisfaction}%`} tendance="Période actuelle" estPositif={true} icone={<Smile color="#10B981" size={28} />} couleurFond="#ECFDF5" />
-            <KpiCard titre="Avis négatifs (≤ 2/5)" valeur={kpis.avis_negatifs.toString()} tendance="À traiter" estPositif={false} icone={<Frown color="#EF4444" size={28} />} couleurFond="#FEF2F2" />
+            <KpiCard titre="Total avis" valeur={kpis.total_avis.toString()} tendance="Période actuelle" estPositif={true} icone={<MessageSquare color="#4318FF" size={28} />} couleurFond="#F4F7FE" />
+            <KpiCard titre="Note moyenne" valeur={`${kpis.note_moyenne.toFixed(1)} / 5`} tendance="Période actuelle" estPositif={true} icone={<Star color="white" size={28} fill="white" />} couleurFond="#4318FF" />
+            <KpiCard titre="Satisfaction" valeur={`${kpis.taux_satisfaction}%`} tendance="Période actuelle" estPositif={true} icone={<Smile color="#10B981" size={28} />} couleurFond="#ECFDF5" />
+            <KpiCard titre="Avis négatifs" valeur={kpis.avis_negatifs.toString()} tendance="À traiter" estPositif={false} icone={<Frown color="#EF4444" size={28} />} couleurFond="#FEF2F2" />
           </div>
 
           <div className="charts-grid">
             {/* GRAPHIQUE BARRES */}
-            <div className="chart-card">
+            <div className="chart-card" style={{ height: '350px' }}>
               <h2 className="chart-title">Satisfaction par Service</h2>
-              {donneesServices.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-[300px] text-slate-400" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '300px', color: '#94A3B8'}}>
-                  <Database size={32} style={{marginBottom: '8px', opacity: 0.5}} />
-                  <p>Aucune donnée dans la base de données</p>
-                </div>
-              ) : (
-                <div style={{ width: '100%', height: 300 }}>
-                  <ResponsiveContainer>
-                    <BarChart data={donneesServices} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-                      <XAxis dataKey="service" tickLine={false} axisLine={false} tick={{fill: '#64748B', fontSize: 13}} dy={10} />
-                      <YAxis domain={[0, 5]} tickLine={false} axisLine={false} tick={{fill: '#64748B', fontSize: 13}} dx={-10} />
-                      <TooltipBar cursor={{fill: '#F8FAFC'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)'}} />
-                      <Bar dataKey="note" fill="#4318FF" radius={[6, 6, 0, 0]} barSize={32} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={donneesServices} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                  {/* On cache les ticks en bas avec tick={false} */}
+                  <XAxis dataKey="service" tick={false} axisLine={false} /> 
+                  <YAxis domain={[0, 5]} tickLine={false} axisLine={false} />
+                  {/* Le Tooltip affiche les infos au survol */}
+                  <TooltipBar 
+                    cursor={{fill: '#F8FAFC'}} 
+                    contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)'}} 
+                  />
+                  <Bar dataKey="note" fill="#4318FF" radius={[6, 6, 0, 0]} barSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
 
             {/* GRAPHIQUE DONUT */}
-            <div className="chart-card">
-               <h2 className="chart-title">Répartition par Motif de visite</h2>
-               {donneesMotifs.length === 0 ? (
-                 <div className="flex flex-col items-center justify-center h-[300px] text-slate-400" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '300px', color: '#94A3B8'}}>
-                   <Database size={32} style={{marginBottom: '8px', opacity: 0.5}} />
-                   <p>Aucune donnée dans la base de données</p>
-                 </div>
-               ) : (
-                 <div style={{ width: '100%', height: 300, position: 'relative' }}>
-                   <ResponsiveContainer>
-                     <PieChart>
-                       <Pie data={donneesMotifs} dataKey="total" nameKey="motif" cx="50%" cy="45%" innerRadius={80} outerRadius={110} paddingAngle={3} stroke="none">
-                         {donneesMotifs.map((_entry, index) => (
-                           <Cell key={`cell-${index}`} fill={COULEURS[index % COULEURS.length]} />
-                         ))}
-                       </Pie>
-                       <TooltipPie contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)'}} />
-                       <Legend verticalAlign="bottom" height={36} iconType="circle" formatter={formatLegendText} />
-                     </PieChart>
-                   </ResponsiveContainer>
-                   <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none' }}>
-                     <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E293B', lineHeight: '1' }}>{kpis.total_avis}</div>
-                     <div style={{ fontSize: '12px', color: '#64748B' }}>Total</div>
-                   </div>
-                 </div>
-               )}
+            <div className="chart-card" style={{ height: '350px' }}>
+               <h2 className="chart-title">Répartition par Motif</h2>
+               <ResponsiveContainer width="100%" height="100%">
+                 <PieChart>
+                    <Pie 
+                      data={donneesMotifs} 
+                      dataKey="total" 
+                      nameKey="motif" 
+                      innerRadius={80} 
+                      outerRadius={110}
+                    >
+                      {donneesMotifs.map((_entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COULEURS[index % COULEURS.length]} />
+                      ))}
+                    </Pie>
+                    <TooltipPie />
+                    <Legend />
+                 </PieChart>
+               </ResponsiveContainer>
             </div>
           </div>
         </>
       )}
-
-      {/* --- LA FENÊTRE MODAL D'EXPORT (S'affiche par-dessus le reste) --- */}
+      
       {modalExportOuvert && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', width: '90%', maxWidth: '400px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
@@ -198,7 +180,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

@@ -1,6 +1,6 @@
 .sidebar {
   width: 260px;
-  background-color: #0B1437;
+  background-color: var(--color-sidebar);
   color: white;
   display: flex;
   flex-direction: column;
@@ -70,7 +70,7 @@
 
 .menu-item:hover,
 .menu-item.active {
-  background-color: #4318FF;
+  background-color: var(--color-primary); 
   color: white;
 }
 

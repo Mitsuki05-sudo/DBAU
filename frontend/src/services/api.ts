@@ -7,14 +7,12 @@ export const api = axios.create({
 
 // objet "adminService" qui regroupe tous les appels API de l'admin
 export const adminService = {
-  // Récupérer les KPIs globaux (avec filtres de dates optionnels)
   getKpis: async (dateDebut?: string, dateFin?: string) => {
     try {
-      // On construit l'URL avec les paramètres si les dates existent
       let url = '/admin/kpis';
-      // if (dateDebut && dateFin) {
-      //   url += `?date_debut=${dateDebut}&date_fin=${dateFin}`;
-      // }
+      if (dateDebut && dateFin) {
+        url += `?date_debut=${dateDebut}&date_fin=${dateFin}`;
+      }
       
       const response = await api.get(url);
       console.log("DEBUG API KPIS :", response.data);

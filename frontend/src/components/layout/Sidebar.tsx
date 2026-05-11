@@ -23,7 +23,17 @@ export default function Sidebar() {
       <div className={`sidebar ${menuOuvert ? 'open' : ''}`}>
 
         <div className="sidebar-logo">
-          <div style={{ width: 40, height: 40, backgroundColor: '#FFB547', borderRadius: '50%' }}></div>
+          <div style={{ 
+              width: 40, 
+              height: 40, 
+              backgroundColor: '#15803d', // Le vert de la DBAU
+              borderRadius: '8px',        // Un carré arrondi fait plus "institutionnel" qu'un rond
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontWeight: 'bold'
+            }}></div>
           <div>
             <div className="logo-title">SGEC - DBAU</div>
             <div className="logo-subtitle">Système de Gestion des Expériences Clients</div>
