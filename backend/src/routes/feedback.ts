@@ -28,51 +28,48 @@ router.get('/services', async (_req: Request, res: Response) => {
   }
 });
 
+// Fenêtre anti-doublon : 8 heures glissantes par service
+const FENETRE_HEURES = 8;
+
 // Vérifier si une session a déjà soumis un avis (F-05)
 router.get('/check-session/:sessionId', async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
     const [rows] = await pool.query<any[]>(
-      'SELECT id FROM avis WHERE session_id = ?',
-      [sessionId]
+      `SELECT DISTINCT m.service_id
+       FROM avis a
+       JOIN avis_motifs am ON am.avis_id = a.id
+       JOIN motifs m ON m.id = am.motif_id
+       WHERE a.session_id = ?
+         AND a.date_soumission >= NOW() - INTERVAL ? HOUR`,
+      [sessionId, FENETRE_HEURES]
     );
-    return res.json({ hasSubmitted: rows.length > 0 });
+    const serviceIdsDejaEvalues: number[] = rows.map((r) => r.service_id);
+    return res.json({ hasSubmitted: serviceIdsDejaEvalues.length > 0, serviceIdsDejaEvalues });
   } catch (error) {
-    console.error('Erreur vérification session:', error);
     return res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 
+
 // Soumettre un avis (F-05)
 router.post('/submit', async (req: Request, res: Response) => {
   const connection = await pool.getConnection();
-  
+
   try {
     const avis: AvisPayload = req.body;
 
-    // Validation
     if (!avis.session_id || !avis.motifs || avis.motifs.length === 0) {
       return res.status(400).json({ message: 'Données incomplètes' });
     }
 
-    // Vérifier double soumission
-    const [existing] = await connection.query<any[]>(
-      'SELECT id FROM avis WHERE session_id = ?',
-      [avis.session_id]
-    );
-
-    if (existing.length > 0) {
-      return res.status(409).json({ message: 'Vous avez déjà soumis un avis' });
-    }
-
-    // Validation des notes
     const notes = [
       avis.note_accueil,
       avis.note_temps_attente,
       avis.note_amabilite,
       avis.note_clarte,
       avis.note_proprete,
-      avis.note_globale
+      avis.note_globale,
     ];
 
     for (const note of notes) {
@@ -81,11 +78,35 @@ router.post('/submit', async (req: Request, res: Response) => {
       }
     }
 
+    const [motifRows] = await connection.query<any[]>(
+      `SELECT DISTINCT service_id FROM motifs WHERE id IN (?)`,
+      [avis.motifs]
+    );
+
+    const serviceIdsDuPayload: number[] = motifRows.map((r) => r.service_id);
+
+    const [doublonRows] = await connection.query<any[]>(
+      `SELECT DISTINCT m.service_id
+       FROM avis a
+       JOIN avis_motifs am ON am.avis_id = a.id
+       JOIN motifs m ON m.id = am.motif_id
+       WHERE a.session_id = ?
+         AND DATE(a.date_soumission) = CURDATE()
+         AND m.service_id IN (?)`,
+      [avis.session_id, serviceIdsDuPayload]
+    );
+
+    if (doublonRows.length > 0) {
+      return res.status(409).json({
+        message: "Vous avez déjà soumis un avis pour ce service aujourd'hui.",
+        serviceIdsEnConflit: doublonRows.map((r) => r.service_id),
+      });
+    }
+
     await connection.beginTransaction();
 
-    // Insérer l'avis
     const [result] = await connection.query<any>(
-      `INSERT INTO avis (session_id, note_accueil, note_temps_attente, note_amabilite, note_clarte, note_proprete, note_globale, commentaire) 
+      `INSERT INTO avis (session_id, note_accueil, note_temps_attente, note_amabilite, note_clarte, note_proprete, note_globale, commentaire)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         avis.session_id,
@@ -95,28 +116,26 @@ router.post('/submit', async (req: Request, res: Response) => {
         avis.note_clarte,
         avis.note_proprete,
         avis.note_globale,
-        avis.commentaire || null
+        avis.commentaire || null,
       ]
     );
 
     const avisId = result.insertId;
 
-    // Insérer les motifs liés
     for (const motifId of avis.motifs) {
-      await connection.query(
-        'INSERT INTO avis_motifs (avis_id, motif_id) VALUES (?, ?)',
-        [avisId, motifId]
-      );
+      await connection.query('INSERT INTO avis_motifs (avis_id, motif_id) VALUES (?, ?)', [
+        avisId,
+        motifId,
+      ]);
     }
 
     await connection.commit();
 
-    return res.status(201).json({ 
-      success: true, 
+    return res.status(201).json({
+      success: true,
       message: 'Avis soumis avec succès',
-      avis_id: avisId 
+      avis_id: avisId,
     });
-
   } catch (error) {
     await connection.rollback();
     console.error('Erreur soumission avis:', error);
